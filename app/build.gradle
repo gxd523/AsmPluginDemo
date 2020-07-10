@@ -1,0 +1,37 @@
+apply plugin: 'com.android.application'
+apply plugin: 'asmplugin'
+
+AsmConfig {
+    isDebug = true
+    filterContainsClass = ["R.class", ".R\$"]
+    filterStartWithClass = ["android"]
+    filterClassNameList = [
+            "com.demo.asm.plugin.sample.MyApplication.class",
+            "com.demo.asm.plugin.sample.BuildConfig.class"
+    ]
+    filterClassNameListFile = "filterclass.text"
+    injectMethodPairList = [
+            "com.demo.asm.plugin.sample.MainActivity#onResume"
+    ]
+}
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"
+
+    defaultConfig {
+        applicationId "com.demo.asm.plugin.sample"
+        minSdkVersion 16
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation project(path: ':lib')
+}
