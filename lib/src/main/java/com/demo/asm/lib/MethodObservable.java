@@ -6,9 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public enum MethodObservable {
-    INSTANCE;
+public class MethodObservable {
     private Map<String, List<MethodObserver>> methodObserverListMap = new HashMap<>();
+
+    private MethodObservable() {
+    }
+
+    public static MethodObservable getInstance() {
+        return Holder.INSTANCE;
+    }
 
     public void addMethodObserver(MethodObserver observer) {
         addMethodObserver(observer, "addFromListDefaultTag");
@@ -45,5 +51,9 @@ public enum MethodObservable {
         for (MethodObserver observer : methodObserverList) {
             observer.onMethodEnd(tag, methodName);
         }
+    }
+
+    private static final class Holder {
+        private static final MethodObservable INSTANCE = new MethodObservable();
     }
 }
