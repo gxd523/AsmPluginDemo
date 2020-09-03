@@ -64,7 +64,8 @@ public class AsmMethodVisitor extends AdviceAdapter {
             //name:方法名称;
             //descriptor:方法描述，参数和返回值;
             //isInterface；是否是接口;
-            methodVisitor.visitMethodInsn(INVOKESTATIC, METHOD_EVENT_MANAGER, "getInstance", "()L" + METHOD_EVENT_MANAGER + ";", false);
+//            methodVisitor.visitMethodInsn(INVOKESTATIC, METHOD_EVENT_MANAGER, "getInstance", "()L" + METHOD_EVENT_MANAGER + ";", false);
+            methodVisitor.visitFieldInsn(GETSTATIC, METHOD_EVENT_MANAGER, "INSTANCE", "L" + METHOD_EVENT_MANAGER + ";");
             //visitLdcInsn:访问ldc指令，也就是访问常量池索引；
             //value:必须是非空的Integer,Float,Double,Long,String,或者对象的Type,Array的Type,Method Sort的Type，或者Method Handle常量中的Handle，或者ConstantDynamic;
             methodVisitor.visitLdcInsn(mTag);
@@ -76,7 +77,8 @@ public class AsmMethodVisitor extends AdviceAdapter {
     @Override
     protected void onMethodExit(int opcode) {
         if (needInject && mTag != null) {
-            methodVisitor.visitMethodInsn(INVOKESTATIC, METHOD_EVENT_MANAGER, "getInstance", "()L" + METHOD_EVENT_MANAGER + ";", false);
+//            methodVisitor.visitMethodInsn(INVOKESTATIC, METHOD_EVENT_MANAGER, "getInstance", "()L" + METHOD_EVENT_MANAGER + ";", false);
+            methodVisitor.visitFieldInsn(GETSTATIC, METHOD_EVENT_MANAGER, "INSTANCE", "L" + METHOD_EVENT_MANAGER + ";");
             methodVisitor.visitLdcInsn(mTag);
             methodVisitor.visitLdcInsn(methodName);
             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, METHOD_EVENT_MANAGER, "notifyMethodEnd", "(Ljava/lang/String;Ljava/lang/String;)V", false);
