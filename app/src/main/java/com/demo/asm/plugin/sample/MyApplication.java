@@ -14,8 +14,8 @@ public class MyApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        MethodObservable.getInstance().addMethodObserver(new TimeObserver(), "time");
-        MethodObservable.getInstance().addMethodObserver(new StaticObserver(), "static");
-        MethodObservable.getInstance().addMethodObserver(new DefaultObserver());
+        MethodObservable.INSTANCE.addMethodObserver(new TimeObserver(), "time");
+        MethodObservable.INSTANCE.addMethodObserver(new StaticObserver(), "static");
+        MethodObservable.INSTANCE.addMethodObserver(new DefaultObserver());
     }
 }
