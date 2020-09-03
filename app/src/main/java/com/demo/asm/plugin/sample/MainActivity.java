@@ -12,7 +12,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
         for (int i = 0; i < 2; i++) {
             new Thread(this::downloadTask).start();
