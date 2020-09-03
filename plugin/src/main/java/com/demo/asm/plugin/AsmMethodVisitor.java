@@ -6,7 +6,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.AdviceAdapter;
 
 public class AsmMethodVisitor extends AdviceAdapter {
-    private static final String TAG = "AsmMethodVisitor";
     private static final String ANNOTATION_TRACK_METHOD = "Lcom/demo/asm/lib/TrackMethod;";
     private static final String METHOD_EVENT_MANAGER = "com/demo/asm/lib/MethodObservable";
     private final MethodVisitor methodVisitor;
@@ -47,7 +46,7 @@ public class AsmMethodVisitor extends AdviceAdapter {
                     super.visit(name, value);
                     if (name.equals("tag") && value instanceof String) {
                         mTag = (String) value;
-                        Logger.log(TAG, mTag, " methodName=" + methodName);
+                        System.out.printf("%s()...%s\n", methodName, value);
                     }
                 }
             };
@@ -55,6 +54,9 @@ public class AsmMethodVisitor extends AdviceAdapter {
         return annotationVisitor;
     }
 
+    /**
+     * 方法的开始注入代码
+     */
     @Override
     protected void onMethodEnter() {
         if (needInject && mTag != null) {
@@ -74,6 +76,9 @@ public class AsmMethodVisitor extends AdviceAdapter {
         }
     }
 
+    /**
+     * 方法的结束注入代码
+     */
     @Override
     protected void onMethodExit(int opcode) {
         if (needInject && mTag != null) {

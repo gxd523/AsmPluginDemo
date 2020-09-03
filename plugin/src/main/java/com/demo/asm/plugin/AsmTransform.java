@@ -39,7 +39,6 @@ import java.util.jar.JarOutputStream;
  * 核心类
  */
 public class AsmTransform extends Transform {
-    private static final String TAG = "AsmTransform";
     private static AsmConfig mAsmConfig;
     private Map<String, File> modifyMap = new HashMap<>();
     private Project mProject;
@@ -80,7 +79,6 @@ public class AsmTransform extends Transform {
         super.transform(transformInvocation);
         // transform方法中才能获取到注册的对象
         mAsmConfig = (AsmConfig) this.mProject.getExtensions().getByName(AsmConfig.class.getSimpleName());
-        Logger.isDebug = mAsmConfig.isDebug;
         addFilterClass(mProject.getProjectDir().getAbsolutePath());
         if (!isIncremental()) {
             transformInvocation.getOutputProvider().deleteAll();
@@ -106,7 +104,7 @@ public class AsmTransform extends Transform {
             if (Util.isEmpty(line)) {
                 continue;
             }
-            Logger.log(TAG, "filterClassName-->" + line);
+            System.out.printf("filterClassName-->%s\n", line);
             if (mAsmConfig.filterClassList == null) {
                 mAsmConfig.filterClassList = new ArrayList<>();
             }
@@ -175,7 +173,7 @@ public class AsmTransform extends Transform {
                 // 修改class文件内容
                 byte[] modifiedBytes = null;
                 if (filterModifyClass(classFilePath)) {
-                    Logger.log(TAG, "Jar Modify Class-->", classFilePath);
+                    System.out.printf("Jar Modify Class-->%s\n", classFilePath);
                     modifiedBytes = modifyClass(sourceBytes);
                 }
                 if (modifiedBytes == null) {
@@ -193,34 +191,36 @@ public class AsmTransform extends Transform {
 
     /**
      * 对directory进行处理
+     *
+     * @param directoryInput /Users/guoxiaodong/Demos/AsmPluginDemo/app/build/intermediates/javac/debug/classes
      */
     private void transformDirectory(TransformInvocation transformInvocation, DirectoryInput directoryInput) throws IOException {
-        Logger.log(TAG, "transformDirectory-->" + directoryInput.getFile().getName());
-        File tempDir = transformInvocation.getContext().getTemporaryDir();
-        // 获取输出路径
-        File dest = transformInvocation.getOutputProvider().getContentLocation(directoryInput.getName(), directoryInput.getContentTypes(), directoryInput.getScopes(), Format.DIRECTORY);
-        File dir = directoryInput.getFile();
-        if (dir != null && dir.exists()) {
-            //tempDir=build/tmp/transformClassesWithAsmTransformForDebug
-            //dir=build/intermediates/javac/debug/compileDebugJavaWithJavac/classes
+        File directoryInputFile = directoryInput.getFile();
+        // /Users/guoxiaodong/Demos/AsmPluginDemo/app/build/intermediates/transforms/AsmTransform/debug/2
+        File dest = transformInvocation.getOutputProvider().getContentLocation(
+                directoryInput.getName(),// 697da665ad33881799cfc4f0d6ee2efd6010a5bc
+                directoryInput.getContentTypes(),// [CLASSES]
+                directoryInput.getScopes(),// [PROJECT]
+                Format.DIRECTORY
+        );
+        if (!directoryInputFile.exists()) {
+            return;
+        }
+        traverseDirectory(
+                directoryInputFile.getAbsolutePath(),
+                transformInvocation.getContext().getTemporaryDir(),
+                directoryInputFile
+        );
 
-            traverseDirectory(dir.getAbsolutePath(), tempDir, dir);
-            //Map<String, File> modifiedMap = new HashMap<>();
-            //traverseDirectory(tempDir, dir, modifiedMap, dir.getAbsolutePath() + File.separator);
+        FileUtils.copyDirectory(directoryInputFile, dest);
 
-            //input.getFile=build/intermediates/javac/debug/compileDebugJavaWithJavac/classes
-            //dest=build/intermediates/transforms/AsmTransform/debug/52
-
-            FileUtils.copyDirectory(directoryInput.getFile(), dest);
-
-            for (Map.Entry<String, File> entry : modifyMap.entrySet()) {
-                File target = new File(dest.getAbsolutePath() + File.separatorChar + entry.getKey().replace('.', File.separatorChar) + ".class");
-                if (target.exists()) {
-                    target.delete();
-                }
-                FileUtils.copyFile(entry.getValue(), target);
-                entry.getValue().delete();
+        for (Map.Entry<String, File> entry : modifyMap.entrySet()) {
+            File target = new File(dest.getAbsolutePath() + File.separatorChar + entry.getKey().replace('.', File.separatorChar) + ".class");
+            if (target.exists()) {
+                target.delete();
             }
+            FileUtils.copyFile(entry.getValue(), target);
+            entry.getValue().delete();
         }
     }
 
@@ -228,7 +228,7 @@ public class AsmTransform extends Transform {
      * 遍历目录下面的class文件
      *
      * @param basedir 基准目录，和dir对比需要找到包路径
-     * @param tempDir 需要写入的临时目录
+     * @param tempDir 需要写入的临时目录 /Users/guoxiaodong/Demos/AsmPluginDemo/app/build/tmp/transformClassesWithAsmTransformForDebug
      * @param dir     class文件目录
      */
     private void traverseDirectory(String basedir, File tempDir, File dir) throws IOException {
@@ -241,7 +241,7 @@ public class AsmTransform extends Transform {
                 byte[] sourceBytes = IOUtils.toByteArray(new FileInputStream(file));
                 byte[] modifiedBytes = null;
                 if (filterModifyClass(className + ".class")) {
-                    Logger.log(TAG, "Modify dir-->", className + ".class");
+                    System.out.printf("Modify dir-->%s.class\n", className);
                     modifiedBytes = modifyClass(sourceBytes);
                 }
                 if (modifiedBytes == null) {
@@ -260,6 +260,7 @@ public class AsmTransform extends Transform {
 
     /**
      * 判断是否修改
+     *
      * @param classPath 例：com/demo/asm/lib/MethodObservable.class
      */
     private boolean filterModifyClass(String classPath) {
