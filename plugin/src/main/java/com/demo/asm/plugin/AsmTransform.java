@@ -26,7 +26,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -82,82 +81,101 @@ public class AsmTransform extends Transform {
         // transform方法中才能获取到注册的对象
         mAsmConfig = (AsmConfig) this.mProject.getExtensions().getByName(AsmConfig.class.getSimpleName());
         Logger.isDebug = mAsmConfig.isDebug;
-        String projectDri = this.mProject.getProjectDir().getAbsolutePath();
-        initFilterClassFile(projectDri);
+        addFilterClass(mProject.getProjectDir().getAbsolutePath());
         if (!isIncremental()) {
             transformInvocation.getOutputProvider().deleteAll();
         }
+
+        traversalInput(transformInvocation);
+    }
+
+    /**
+     * 添加要过滤的类
+     *
+     * @param projectDri /Users/guoxiaodong/Demos/AsmPluginDemo/app
+     */
+    private void addFilterClass(String projectDri) throws IOException {
+        if (Util.isEmpty(mAsmConfig.filterClassListFile)) {
+            return;
+        }
+        File filterClassFile = new File(projectDri, mAsmConfig.filterClassListFile);
+        FileReader fileReader = new FileReader(filterClassFile.getAbsolutePath());
+        BufferedReader bufferedReader = new BufferedReader(fileReader);
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+            if (Util.isEmpty(line)) {
+                continue;
+            }
+            Logger.log(TAG, "filterClassName-->" + line);
+            if (mAsmConfig.filterClassList == null) {
+                mAsmConfig.filterClassList = new ArrayList<>();
+            }
+            mAsmConfig.filterClassList.add(line);
+        }
+        bufferedReader.close();
+        fileReader.close();
+    }
+
+    /**
+     * 遍历输入，分别遍历其中的jar以及directory
+     */
+    private void traversalInput(TransformInvocation transformInvocation) throws IOException {
         // 获取输入（消费型输入，需要传递给下一个Transform）
-        Collection<TransformInput> inputList = transformInvocation.getInputs();
-        for (TransformInput input : inputList) {
-            // 遍历输入，分别遍历其中的jar以及directory
-            for (JarInput jarInput : input.getJarInputs()) {
-                // 对jar文件进行处理
-                Logger.log(TAG, "Find jar input-->" + jarInput.getName());
+        for (TransformInput transformInput : transformInvocation.getInputs()) {
+            for (JarInput jarInput : transformInput.getJarInputs()) {
                 transformJar(transformInvocation, jarInput);
             }
-            for (DirectoryInput directoryInput : input.getDirectoryInputs()) {
-                // 对directory进行处理
-                Logger.log(TAG, "Find dir input-->" + directoryInput.getFile().getName());
+            for (DirectoryInput directoryInput : transformInput.getDirectoryInputs()) {
                 transformDirectory(transformInvocation, directoryInput);
             }
         }
     }
 
-    private void initFilterClassFile(String projectDri) {
-        if (mAsmConfig.filterClassNameListFile != null && mAsmConfig.filterClassNameListFile.length() != 0) {
-            File filterClassFile = new File(projectDri, mAsmConfig.filterClassNameListFile);
-            try {
-                FileReader fileReader = new FileReader(filterClassFile.getAbsolutePath());
-                BufferedReader bufferedReader = new BufferedReader(fileReader);
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    Logger.log(TAG, "filterClassName-->" + line);
-                    if (mAsmConfig.filterClassNameList == null) {
-                        mAsmConfig.filterClassNameList = new ArrayList<>();
-                    }
-                    if (line.length() > 0) {
-                        mAsmConfig.filterClassNameList.add(line);
-                    }
-                }
-                bufferedReader.close();
-                fileReader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    /**
+     * 对jar文件进行处理
+     *
+     * @param jarInput 例:lib
+     */
+    private void transformJar(TransformInvocation transformInvocation, JarInput jarInput) throws IOException {
+        // /Users/guoxiaodong/Demos/AsmPluginDemo/lib/build/.transforms/e7f67a5d64774e8a4c1ce814209cae10/jetified-lib.jar
+        File jarInputFile = jarInput.getFile();
+        String hexName = DigestUtils.md5Hex(jarInputFile.getAbsolutePath()).substring(0, 8);
 
-    private void transformJar(TransformInvocation invocation, JarInput input) throws IOException {
-        File tempDir = invocation.getContext().getTemporaryDir();
-        String destName = input.getFile().getName();
-        String hexName = DigestUtils.md5Hex(input.getFile().getAbsolutePath()).substring(0, 8);
+        String destName = jarInputFile.getName();
         if (destName.endsWith(".jar")) {
             destName = destName.substring(0, destName.length() - 4);
         }
-        // 获取输出路径
-        File dest = invocation.getOutputProvider().getContentLocation(destName + "_" + hexName, input.getContentTypes(), input.getScopes(), Format.JAR);
-        JarFile originJar = new JarFile(input.getFile());
-        //input:/build/intermediates/runtime_library_classes/release/classes.jar
-        File outputJar = new File(tempDir, "temp_" + input.getFile().getName());
-        //out:/build/tmp/transformClassesWithAsmTransformForRelease/temp_classes.jar
-        //dest:/build/intermediates/transforms/AsmTransform/release/26.jar
+
+        File dest = transformInvocation.getOutputProvider().getContentLocation(// 获取输出路径
+                destName + "_" + hexName,
+                jarInput.getContentTypes(),// [CLASSES]
+                jarInput.getScopes(),// [SUB_PROJECTS]
+                Format.JAR
+        );
+        JarFile originJar = new JarFile(jarInputFile);
+        // /Users/guoxiaodong/Demos/AsmPluginDemo/app/build/tmp/transformClassesWithAsmTransformForDebug
+        File tempDir = transformInvocation.getContext().getTemporaryDir();
+        // /Users/guoxiaodong/Demos/AsmPluginDemo/app/build/tmp/transformClassesWithAsmTransformForDebug/temp_R.jar
+        File outputJar = new File(tempDir, "temp_" + jarInputFile.getName());
         JarOutputStream output = new JarOutputStream(new FileOutputStream(outputJar));
 
         // 遍历原jar文件寻找class文件
         Enumeration<JarEntry> enumeration = originJar.entries();
         while (enumeration.hasMoreElements()) {
             JarEntry originEntry = enumeration.nextElement();
-            InputStream inputStream = originJar.getInputStream(originEntry);
-            String entryName = originEntry.getName();
-            if (entryName.endsWith(".class")) {
-                JarEntry destEntry = new JarEntry(entryName);
+            // com/demo/asm/lib/MethodObservable.class
+            String classFilePath = originEntry.getName();
+            if (classFilePath.endsWith(".class")) {
+                JarEntry destEntry = new JarEntry(classFilePath);
                 output.putNextEntry(destEntry);
+
+                InputStream inputStream = originJar.getInputStream(originEntry);
                 byte[] sourceBytes = IOUtils.toByteArray(inputStream);
+
                 // 修改class文件内容
                 byte[] modifiedBytes = null;
-                if (filterModifyClass(entryName)) {
-                    Logger.log(TAG, "Modify jar-->", entryName);
+                if (filterModifyClass(classFilePath)) {
+                    Logger.log(TAG, "Jar Modify Class-->", classFilePath);
                     modifiedBytes = modifyClass(sourceBytes);
                 }
                 if (modifiedBytes == null) {
@@ -173,11 +191,15 @@ public class AsmTransform extends Transform {
         FileUtils.copyFile(outputJar, dest);
     }
 
-    private void transformDirectory(TransformInvocation invocation, DirectoryInput input) throws IOException {
-        File tempDir = invocation.getContext().getTemporaryDir();
+    /**
+     * 对directory进行处理
+     */
+    private void transformDirectory(TransformInvocation transformInvocation, DirectoryInput directoryInput) throws IOException {
+        Logger.log(TAG, "transformDirectory-->" + directoryInput.getFile().getName());
+        File tempDir = transformInvocation.getContext().getTemporaryDir();
         // 获取输出路径
-        File dest = invocation.getOutputProvider().getContentLocation(input.getName(), input.getContentTypes(), input.getScopes(), Format.DIRECTORY);
-        File dir = input.getFile();
+        File dest = transformInvocation.getOutputProvider().getContentLocation(directoryInput.getName(), directoryInput.getContentTypes(), directoryInput.getScopes(), Format.DIRECTORY);
+        File dir = directoryInput.getFile();
         if (dir != null && dir.exists()) {
             //tempDir=build/tmp/transformClassesWithAsmTransformForDebug
             //dir=build/intermediates/javac/debug/compileDebugJavaWithJavac/classes
@@ -189,7 +211,7 @@ public class AsmTransform extends Transform {
             //input.getFile=build/intermediates/javac/debug/compileDebugJavaWithJavac/classes
             //dest=build/intermediates/transforms/AsmTransform/debug/52
 
-            FileUtils.copyDirectory(input.getFile(), dest);
+            FileUtils.copyDirectory(directoryInput.getFile(), dest);
 
             for (Map.Entry<String, File> entry : modifyMap.entrySet()) {
                 File target = new File(dest.getAbsolutePath() + File.separatorChar + entry.getKey().replace('.', File.separatorChar) + ".class");
@@ -236,13 +258,17 @@ public class AsmTransform extends Transform {
         }
     }
 
-    private boolean filterModifyClass(String className) {
-        if (className == null || className.length() == 0) {
+    /**
+     * 判断是否修改
+     * @param classPath 例：com/demo/asm/lib/MethodObservable.class
+     */
+    private boolean filterModifyClass(String classPath) {
+        if (Util.isEmpty(classPath)) {
             return false;
         }
-        String s = className.replace(File.separator, ".");
-        if (mAsmConfig.filterClassNameList != null && mAsmConfig.filterClassNameList.size() > 0) {
-            for (String str : mAsmConfig.filterClassNameList) {
+        String s = classPath.replace(File.separator, ".");
+        if (mAsmConfig.filterClassList != null && mAsmConfig.filterClassList.size() > 0) {
+            for (String str : mAsmConfig.filterClassList) {
                 if (s.equals(str)) {
                     return false;
                 }
@@ -265,11 +291,14 @@ public class AsmTransform extends Transform {
         return true;
     }
 
+    /**
+     * 修改字节码文件
+     */
     private byte[] modifyClass(byte[] classBytes) {
         ClassReader classReader = new ClassReader(classBytes);
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        ClassVisitor classVisitor = new AsmClassVisitor(classWriter);
-        classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES);
+        ClassVisitor asmClassVisitor = new AsmClassVisitor(classWriter);
+        classReader.accept(asmClassVisitor, ClassReader.EXPAND_FRAMES);
         return classWriter.toByteArray();
     }
 }

@@ -6,7 +6,13 @@ import org.objectweb.asm.Opcodes;
 
 import java.io.File;
 
+/**
+ * 修改字节码文件
+ */
 public class AsmClassVisitor extends ClassVisitor {
+    /**
+     * 例：com/demo/asm/plugin/sample/MainActivity
+     */
     private String className;
 
     public AsmClassVisitor(ClassVisitor classVisitor) {
@@ -25,7 +31,6 @@ public class AsmClassVisitor extends ClassVisitor {
      */
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        System.out.println("AsmClassVisitor.visit()-->");
         super.visit(version, access, name, signature, superName, interfaces);
         this.className = name;
     }
@@ -40,11 +45,11 @@ public class AsmClassVisitor extends ClassVisitor {
      */
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        System.out.println("AsmClassVisitor.visitMethod()-->");
+        System.out.println("visitMethod-->" + className + "." + name);
         MethodVisitor methodVisitor = super.visitMethod(access, name, desc, signature, exceptions);
         AsmMethodVisitor asmMethodVisitor = new AsmMethodVisitor(methodVisitor, access, name, desc);
         AsmConfig asmConfig = AsmTransform.getAsmConfig();
-        if (asmConfig.injectMethodPairList == null || asmConfig.injectMethodPairList.length == 0) {
+        if (Util.isEmpty(asmConfig.injectMethodPairList)) {
             return asmMethodVisitor;
         }
         for (String injectMethodString : asmConfig.injectMethodPairList) {
@@ -57,7 +62,7 @@ public class AsmClassVisitor extends ClassVisitor {
             }
             String className = split[0].replace('.', File.separatorChar);
             if (name.equals(split[1]) && className.equals(this.className)) {
-                System.out.println("kkk-->" + className + "..." + split[1]);
+                System.out.println("injectMethodPairList-->" + className + "..." + split[1]);
                 asmMethodVisitor.setTag("addFromListDefaultTag");
                 break;
             }

@@ -5,11 +5,11 @@ AsmConfig {
     isDebug = true
     filterContainsClass = ["R.class", ".R\$"]
     filterStartWithClass = ["android"]
-    filterClassNameList = [
+    filterClassList = [
             "com.demo.asm.plugin.sample.MyApplication.class",
             "com.demo.asm.plugin.sample.BuildConfig.class"
     ]
-    filterClassNameListFile = "filterclass.text"
+    filterClassListFile = "filterclass.text"
     injectMethodPairList = [
             "com.demo.asm.plugin.sample.MainActivity#onResume"
     ]

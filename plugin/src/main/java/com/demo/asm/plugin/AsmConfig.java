@@ -12,9 +12,12 @@ public class AsmConfig {
      */
     public String[] filterStartWithClass;
 
-    public List<String> filterClassNameList;
-    public String filterClassNameListFile;
+    public List<String> filterClassList;
+    public String filterClassListFile;
 
+    /**
+     * 注入方法集合，用#隔开，例com.demo.asm.plugin.sample.MainActivity#onResume
+     */
     public String[] injectMethodPairList;
     public boolean isDebug;
 }
