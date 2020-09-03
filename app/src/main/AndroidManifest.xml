@@ -5,7 +5,7 @@
     <application
         android:name="com.demo.asm.plugin.sample.MyApplication"
         android:label="AsmPluginDemo"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@android:mipmap/sym_def_app_icon"
         android:theme="@android:style/Theme.Light.NoTitleBar.Fullscreen">
         <activity android:name="com.demo.asm.plugin.sample.MainActivity">
             <intent-filter>
