@@ -45,7 +45,6 @@ public class AsmClassVisitor extends ClassVisitor {
      */
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        System.out.println("visitMethod-->" + className + "." + name);
         MethodVisitor methodVisitor = super.visitMethod(access, name, desc, signature, exceptions);
         AsmMethodVisitor asmMethodVisitor = new AsmMethodVisitor(methodVisitor, access, name, desc);
         AsmConfig asmConfig = AsmTransform.getAsmConfig();

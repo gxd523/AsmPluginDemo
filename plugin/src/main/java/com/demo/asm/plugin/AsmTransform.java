@@ -104,7 +104,6 @@ public class AsmTransform extends Transform {
             if (Util.isEmpty(line)) {
                 continue;
             }
-            System.out.printf("filterClassName-->%s\n", line);
             if (mAsmConfig.filterClassList == null) {
                 mAsmConfig.filterClassList = new ArrayList<>();
             }
@@ -155,7 +154,7 @@ public class AsmTransform extends Transform {
         File tempDir = transformInvocation.getContext().getTemporaryDir();
         // /Users/guoxiaodong/Demos/AsmPluginDemo/app/build/tmp/transformClassesWithAsmTransformForDebug/temp_R.jar
         File outputJar = new File(tempDir, "temp_" + jarInputFile.getName());
-        JarOutputStream output = new JarOutputStream(new FileOutputStream(outputJar));
+        JarOutputStream jarOutputStream = new JarOutputStream(new FileOutputStream(outputJar));
 
         // 遍历原jar文件寻找class文件
         Enumeration<JarEntry> enumeration = originJar.entries();
@@ -165,7 +164,7 @@ public class AsmTransform extends Transform {
             String classFilePath = originEntry.getName();
             if (classFilePath.endsWith(".class")) {
                 JarEntry destEntry = new JarEntry(classFilePath);
-                output.putNextEntry(destEntry);
+                jarOutputStream.putNextEntry(destEntry);
 
                 InputStream inputStream = originJar.getInputStream(originEntry);
                 byte[] sourceBytes = IOUtils.toByteArray(inputStream);
@@ -179,11 +178,11 @@ public class AsmTransform extends Transform {
                 if (modifiedBytes == null) {
                     modifiedBytes = sourceBytes;
                 }
-                output.write(modifiedBytes);
+                jarOutputStream.write(modifiedBytes);
             }
-            output.closeEntry();
+            jarOutputStream.closeEntry();
         }
-        output.close();
+        jarOutputStream.close();
         originJar.close();
         // 复制修改后jar到输出路径
         FileUtils.copyFile(outputJar, dest);

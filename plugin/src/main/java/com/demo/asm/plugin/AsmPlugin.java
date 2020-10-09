@@ -11,9 +11,10 @@ public class AsmPlugin implements Plugin<Project> {
     @Override
     public void apply(@NonNull Project project) {
         AppExtension appExtension = project.getExtensions().findByType(AppExtension.class);
-        if (appExtension != null) {
-            project.getExtensions().create("AsmConfig", AsmConfig.class);
-            appExtension.registerTransform(new AsmTransform(project));// 注册优先于task任务的添加
+        if (appExtension == null) {
+            return;
         }
+        project.getExtensions().create("AsmConfig", AsmConfig.class);
+        appExtension.registerTransform(new AsmTransform(project));// 注册优先于task任务的添加
     }
 }

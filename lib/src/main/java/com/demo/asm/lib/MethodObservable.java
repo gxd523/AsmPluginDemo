@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 一个被观察者，对应多种事件(key)，每个事件对应多个观察者
+ */
 public enum MethodObservable {
     INSTANCE;
     private Map<String, List<MethodObserver>> methodObserverListMap = new HashMap<>();
