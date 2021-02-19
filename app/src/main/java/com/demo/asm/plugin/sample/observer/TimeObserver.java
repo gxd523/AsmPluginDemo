@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TimeObserver implements MethodObserver {
-    private Map<String, Long> methodTimeMap = new HashMap<>();
+    private final Map<String, Long> methodTimeMap = new HashMap<>();
 
     @Override
     public void onMethodStart(String tag, String methodName) {

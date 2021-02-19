@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public enum MethodObservable {
     INSTANCE;
-    private Map<String, List<MethodObserver>> methodObserverListMap = new HashMap<>();
+    private final Map<String, List<MethodObserver>> methodObserverListMap = new HashMap<>();
 
     public void addMethodObserver(MethodObserver observer) {
         addMethodObserver(observer, "addFromListDefaultTag");

@@ -40,8 +40,8 @@ import java.util.jar.JarOutputStream;
  */
 public class AsmTransform extends Transform {
     private static AsmConfig mAsmConfig;
-    private Map<String, File> modifyMap = new HashMap<>();
-    private Project mProject;
+    private final Map<String, File> modifyMap = new HashMap<>();
+    private final Project mProject;
 
     public AsmTransform(Project project) {
         this.mProject = project;
